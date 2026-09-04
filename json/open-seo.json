@@ -1,0 +1,72 @@
+{
+  "name": "OpenSEO",
+  "slug": "open-seo",
+  "categories": [16],
+  "date_created": "2026-09-04",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "interface_port": 3001,
+  "documentation": "https://github.com/every-app/open-seo/blob/main/docs/SELF_HOSTING_DOCKER.md",
+  "website": "https://openseo.so",
+  "logo": "https://raw.githubusercontent.com/every-app/open-seo/main/public/favicon.svg",
+  "config_path": "/opt/open-seo/.env",
+  "description": "Open-Source Alternative zu Semrush und Ahrefs: Keyword-Recherche, Rank-Tracking, Backlinks, Site-Audits, AI-Visibility. LXC mit Docker + offiziellem GHCR-Image. Braucht DataForSEO API-Key (base64 login:password). Läuft in AUTH_MODE=local_noauth — nur hinter eigenem Auth-Proxy exposen.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/open-seo.sh",
+      "resources": {
+        "cpu": 2,
+        "ram": 4096,
+        "hdd": 12,
+        "os": "debian",
+        "version": "12"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "Pflicht: `DATAFORSEO_API_KEY` als base64 `login:password` (siehe every-app/open-seo docs/DATAFORSEO_API_KEY.md). Ohne Key starten SEO-Features nicht.",
+      "type": "warning"
+    },
+    {
+      "text": "Docker-Modus nutzt `AUTH_MODE=local_noauth` (User admin@localhost, keine Auth-Checks). Nur hinter eigenem auth-geschützten Reverse-Proxy, Tunnel oder Privatnetz veröffentlichen. `ALLOWED_HOST` bei Proxy-Nutzung setzen + Container neu erstellen.",
+      "type": "warning"
+    },
+    {
+      "text": "Erster Start dauert 1-2 Minuten (Build im Container). Fortschritt: `docker compose -f /opt/open-seo/compose.yaml logs -f`. Health: `/api/health`. Update: `ct/open-seo.sh` Update-Modus (compose pull + up -d). Telemetrie opt-out: `OPENSEO_TELEMETRY_DISABLED=1` in /opt/open-seo/.env.",
+      "type": "info"
+    }
+  ],
+  "app_vars": [
+    {
+      "name": "var_dataforseo_key",
+      "description": "DataForSEO API-Key (base64 login:password) — Pflicht",
+      "required": true,
+      "default": ""
+    },
+    {
+      "name": "var_port",
+      "description": "App-Port (Default 3001)",
+      "required": false,
+      "default": "3001"
+    },
+    {
+      "name": "var_allowed_host",
+      "description": "Reverse-Proxy Hostname für ALLOWED_HOST (optional)",
+      "required": false,
+      "default": ""
+    },
+    {
+      "name": "var_openrouter_key",
+      "description": "OpenRouter API-Key für SAM / AI-Features (optional)",
+      "required": false,
+      "default": ""
+    }
+  ]
+}
