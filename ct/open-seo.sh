@@ -33,6 +33,24 @@ fi
 
 APP="OpenSEO"
 var_tags="${var_tags:-seo;analytics;marketing}"
+
+# build.func holt das Install-Script fest von upstream:
+#   https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/open-seo-install.sh
+# Dort existiert es nicht (eigenes Repo) -> curl -f liefert 404, bash -c "" läuft leer durch.
+# Deshalb exakt DIESE eine URL auf unser Repo umleiten. Alle anderen curl-Aufrufe
+# (build.func, install.func, tools.func, Docker-Keys, GHCR ...) laufen unverändert durch.
+OPEN_SEO_INSTALL_URL="https://raw.githubusercontent.com/HatchetMan111/OpenSEO-Proxmox/main/install/open-seo-install.sh"
+curl() {
+  local a rerouted=()
+  for a in "$@"; do
+    if [[ "$a" == "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/open-seo-install.sh" ]]; then
+      rerouted+=("$OPEN_SEO_INSTALL_URL")
+    else
+      rerouted+=("$a")
+    fi
+  done
+  command curl "${rerouted[@]}"
+}
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-4096}"
 var_disk="${var_disk:-12}"
