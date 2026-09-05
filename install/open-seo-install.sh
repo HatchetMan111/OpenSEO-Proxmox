@@ -17,6 +17,14 @@ source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 
 # Defaults ZUERST: install.func läuft mit set -u, jede ungesetzte Variable
 # (direkter pct-exec-Weg ohne export aus dem CT-Script) bricht sonst ab.
+# APPLICATION/APP/NSAPP/app/PASSWORD/SSH_* setzt normal build.func (motd_ssh/customize).
+export APPLICATION="${APPLICATION:-OpenSEO}"
+export APP="${APP:-OpenSEO}"
+export NSAPP="${NSAPP:-open-seo}"
+export app="${app:-open-seo}"
+export PASSWORD="${PASSWORD:-}"
+export SSH_AUTHORIZED_KEY="${SSH_AUTHORIZED_KEY:-}"
+export SSH_ROOT="${SSH_ROOT:-no}"
 var_dataforseo_key="${var_dataforseo_key:-}"
 var_port="${var_port:-3001}"
 var_allowed_host="${var_allowed_host:-}"
@@ -117,6 +125,11 @@ done
 motd_ssh
 customize
 cleanup_lxc
+
+# customize() verdrahtet /usr/bin/update fest auf upstream (dort gibt es open-seo nicht).
+# Auf unser Repo zeigen, damit der Update-Befehl im Container funktioniert.
+echo 'bash -c "$(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/OpenSEO-Proxmox/main/ct/open-seo.sh)"' >/usr/bin/update
+chmod +x /usr/bin/update
 
 # --- Schluss-Zusammenfassung: alles Wichtige auf einen Blick ---
 __ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
