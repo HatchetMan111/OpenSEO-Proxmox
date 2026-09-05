@@ -44,6 +44,7 @@ curl() {
   local a rerouted=()
   for a in "$@"; do
     if [[ "$a" == "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/open-seo-install.sh" ]]; then
+      echo ">>> open-seo: install-script reroute -> eigenes Repo" >&2
       rerouted+=("$OPEN_SEO_INSTALL_URL")
     else
       rerouted+=("$a")
@@ -65,6 +66,7 @@ export var_port="${var_port:-3001}"
 export var_allowed_host="${var_allowed_host:-}"
 export var_openrouter_key="${var_openrouter_key:-}"
 
+echo ">>> OpenSEO CT-Installer rev5 (mit install-reroute). Fehlt diese Zeile, läuft eine alte Datei aus dem CDN-Cache." >&2
 header_info "$APP"
 variables
 color
