@@ -14,6 +14,13 @@ if [[ -z "${FUNCTIONS_FILE_PATH:-}" ]]; then
   exit 1
 fi
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
+
+# Defaults ZUERST: install.func läuft mit set -u, jede ungesetzte Variable
+# (direkter pct-exec-Weg ohne export aus dem CT-Script) bricht sonst ab.
+var_dataforseo_key="${var_dataforseo_key:-}"
+var_port="${var_port:-3001}"
+var_allowed_host="${var_allowed_host:-}"
+var_openrouter_key="${var_openrouter_key:-}"
 color
 verb_ip6
 catch_errors
