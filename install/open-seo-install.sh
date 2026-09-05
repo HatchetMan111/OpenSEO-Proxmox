@@ -21,14 +21,13 @@ setting_up_container
 network_check
 update_os
 
-# --- Pflichtwert: DataForSEO API Key (base64 "login:password") ---
-# Nur fragen wenn der Caller (ct-Script / Website-Feld / -s) nichts mitgegeben hat.
+# --- DataForSEO API Key: optional beim Install, nachpflegbar ---
+# Ohne Key startet die App trotzdem (Upstream-Preflight: nur "warn").
+# Key = base64 "login:password" aus dem DataForSEO-Dashboard. Setzbar via:
+#   Umgebungsvariable var_dataforseo_key (unattended) oder später in /opt/open-seo/.env
+# Nie interaktiv fragen: Das Script muss in einem Durchgang ohne Rückfragen laufen.
 if [[ -z "${var_dataforseo_key:-}" ]]; then
-  read -rp "${TAB3}DataForSEO API Key (base64 login:password, siehe docs/DATAFORSEO_API_KEY.md): " var_dataforseo_key
-fi
-if [[ -z "${var_dataforseo_key:-}" ]]; then
-  msg_error "DATAFORSEO_API_KEY is required. Abbruch."
-  exit 1
+  msg_warn "DATAFORSEO_API_KEY ist leer — Web-UI startet trotzdem, SEO-Daten erst nach Nachtragen (siehe Schluss-Hinweis)."
 fi
 var_port="${var_port:-3001}"
 var_allowed_host="${var_allowed_host:-}"
@@ -111,3 +110,16 @@ done
 motd_ssh
 customize
 cleanup_lxc
+
+# --- Schluss-Zusammenfassung: alles Wichtige auf einen Blick ---
+__ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+__ip="${__ip:-<CT-IP>}"
+echo -e "${TAB}${GATEWAY}${BGN}http://${__ip}:${var_port}${CL}"
+echo -e "${TAB}${TAB}${GN}Kein Login nötig (AUTH_MODE=local_noauth, kein Passwort, kein admin/admin). Einfach öffnen.${CL}"
+if [[ -z "${var_dataforseo_key:-}" ]]; then
+  echo -e "${TAB}${TAB}${YW}Noch ohne SEO-Daten: DATAFORSEO_API_KEY nachtragen:${CL}"
+  echo -e "${TAB}${TAB}  1. Key erzeugen: echo -n 'mail:api-passwort' | base64  (API-Passwort aus dem DataForSEO-Dashboard)"
+  echo -e "${TAB}${TAB}  2. In /opt/open-seo/.env bei DATAFORSEO_API_KEY eintragen"
+  echo -e "${TAB}${TAB}  3. docker compose -f /opt/open-seo/compose.yaml up -d --force-recreate open-seo"
+fi
+unset __ip
