@@ -131,15 +131,25 @@ cleanup_lxc
 echo 'bash -c "$(curl -fsSL https://raw.githubusercontent.com/HatchetMan111/OpenSEO-Proxmox/main/ct/open-seo.sh)"' >/usr/bin/update
 chmod +x /usr/bin/update
 
-# --- Schluss-Zusammenfassung: alles Wichtige auf einen Blick ---
+# --- Schluss-Zusammenfassung: unübersehbar + mit echtem Erreichbarkeits-Test ---
 __ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
 __ip="${__ip:-<CT-IP>}"
-echo -e "${TAB}${GATEWAY}${BGN}http://${__ip}:${var_port}${CL}"
-echo -e "${TAB}${TAB}${GN}Kein Login nötig (AUTH_MODE=local_noauth, kein Passwort, kein admin/admin). Einfach öffnen.${CL}"
+__url="http://${__ip}:${var_port}"
+if curl -fsS --max-time 10 "${__url}/api/health" >/dev/null 2>&1; then
+  __ui="ERREICHBAR - im Browser oeffnen"
+else
+  __ui="NOCH NICHT ERREICHBAR - 1-2 Min warten, dann Seite neu laden"
+fi
+echo ""
+echo -e "${BGN}==============================================================${CL}"
+echo -e "${BGN}  OpenSEO Web-UI: ${__url}${CL}"
+echo -e "${BGN}  Status: ${__ui}${CL}"
+echo -e "${BGN}==============================================================${CL}"
+echo -e "${TAB}${TAB}${GN}Kein Login nötig (kein Passwort, kein admin/admin). Einfach öffnen.${CL}"
 if [[ -z "${var_dataforseo_key:-}" ]]; then
   echo -e "${TAB}${TAB}${YW}Noch ohne SEO-Daten: DATAFORSEO_API_KEY nachtragen:${CL}"
   echo -e "${TAB}${TAB}  1. Key erzeugen: echo -n 'mail:api-passwort' | base64  (API-Passwort aus dem DataForSEO-Dashboard)"
   echo -e "${TAB}${TAB}  2. In /opt/open-seo/.env bei DATAFORSEO_API_KEY eintragen"
   echo -e "${TAB}${TAB}  3. docker compose -f /opt/open-seo/compose.yaml up -d --force-recreate open-seo"
 fi
-unset __ip
+unset __ip __url __ui
