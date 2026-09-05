@@ -4,6 +4,15 @@
 # License: MIT | https://github.com/community-scripts/ProxmoxVED/raw/main/LICENSE
 # Source: https://github.com/every-app/open-seo
 
+# Funktionen: normal via build.func (FUNCTIONS_FILE_PATH gesetzt), ersatzweise direkt
+# laden, damit das Script auch standalone per pct exec läuft.
+if [[ -z "${FUNCTIONS_FILE_PATH:-}" ]]; then
+  FUNCTIONS_FILE_PATH="$(curl -fsSL --max-time 30 https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/install.func)"
+fi
+if [[ -z "${FUNCTIONS_FILE_PATH:-}" ]]; then
+  echo "Fehler: Funktionsbibliothek (install.func) konnte nicht geladen werden." >&2
+  exit 1
+fi
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
