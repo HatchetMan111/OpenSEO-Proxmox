@@ -4,7 +4,32 @@
 # License: MIT | https://github.com/community-scripts/ProxmoxVED/raw/main/LICENSE
 # Source: https://github.com/every-app/open-seo
 
-source "$(dirname "${BASH_SOURCE[0]}")/../misc/build.func" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_URL:-https://raw.githubusercontent.com/community-scripts/ProxmoxVED/main}/misc/build.func")
+# build.func laden: lokaler Checkout oder Mirrors (fail-loud statt halb zu laufen).
+# Hintergrund: ProxmoxVED gibt es auf raw.githubusercontent.com nicht (404),
+# kanonisch ist git.community-scripts.org, der alte ProxmoxVE-Mirror lebt noch.
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../misc/build.func" ]]; then
+  source "$(dirname "${BASH_SOURCE[0]}")/../misc/build.func"
+else
+  __build_tmp="$(mktemp)"
+  __build_urls=(
+    "${COMMUNITY_SCRIPTS_URL:-https://git.community-scripts.org/community-scripts/ProxmoxVED/raw/branch/main}/misc/build.func"
+    "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func"
+  )
+  __loaded=0
+  for __url in "${__build_urls[@]}"; do
+    if curl -fsSL --max-time 30 "$__url" -o "$__build_tmp" 2>/dev/null \
+      && [[ -s "$__build_tmp" ]] && grep -q "build_container" "$__build_tmp"; then
+      source "$__build_tmp" && __loaded=1 && break
+    fi
+  done
+  rm -f "$__build_tmp"
+  unset __build_tmp __build_urls __url
+  if [[ "$__loaded" != 1 ]] || ! declare -F header_info >/dev/null 2>&1; then
+    echo "Fehler: build.func konnte von keinem Mirror geladen werden (Internet/DNS auf dem Proxmox-Host pruefen)." >&2
+    exit 1
+  fi
+  unset __loaded
+fi
 
 APP="OpenSEO"
 var_tags="${var_tags:-seo;analytics;marketing}"
