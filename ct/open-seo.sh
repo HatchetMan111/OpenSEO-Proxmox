@@ -34,21 +34,27 @@ fi
 APP="OpenSEO"
 var_tags="${var_tags:-seo;analytics;marketing}"
 
-# build.func holt das Install-Script fest von upstream:
-#   https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/open-seo-install.sh
-# Dort existiert es nicht (eigenes Repo) -> curl -f liefert 404, bash -c "" läuft leer durch.
-# Deshalb exakt DIESE eine URL auf unser Repo umleiten. Alle anderen curl-Aufrufe
-# (build.func, install.func, tools.func, Docker-Keys, GHCR ...) laufen unverändert durch.
+# build.func bildet den Dateinamen aus APP: NSAPP="openseo" (lowercase, ohne
+# Leerzeichen) -> var_install="openseo-install" und holt fest von upstream:
+#   https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/openseo-install.sh
+# (ohne Bindestrich!). Dort existiert die Datei nicht (eigenes Repo) ->
+# curl -f liefert 404, bash -c "" laeuft leer durch und build.func meldet
+# faelschlich "Completed successfully". Deshalb jede solche URL per Pattern
+# auf unser Repo umleiten. Alle anderen curl-Aufrufe (build.func,
+# install.func, tools.func, Docker-Keys, GHCR ...) laufen unveraendert durch.
 OPEN_SEO_INSTALL_URL="https://raw.githubusercontent.com/HatchetMan111/OpenSEO-Proxmox/main/install/open-seo-install.sh"
 curl() {
   local a rerouted=()
   for a in "$@"; do
-    if [[ "$a" == "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/open-seo-install.sh" ]]; then
-      echo ">>> open-seo: install-script reroute -> eigenes Repo" >&2
-      rerouted+=("$OPEN_SEO_INSTALL_URL")
-    else
-      rerouted+=("$a")
-    fi
+    case "$a" in
+      */install/openseo-install.sh*)
+        echo ">>> open-seo: install-script reroute -> eigenes Repo (${a})" >&2
+        rerouted+=("$OPEN_SEO_INSTALL_URL")
+        ;;
+      *)
+        rerouted+=("$a")
+        ;;
+    esac
   done
   command curl "${rerouted[@]}"
 }
@@ -66,7 +72,7 @@ export var_port="${var_port:-3001}"
 export var_allowed_host="${var_allowed_host:-}"
 export var_openrouter_key="${var_openrouter_key:-}"
 
-echo ">>> OpenSEO CT-Installer rev5 (mit install-reroute). Fehlt diese Zeile, läuft eine alte Datei aus dem CDN-Cache." >&2
+echo ">>> OpenSEO CT-Installer rev6 (pattern-reroute openseo-install.sh + fail-loud). Fehlt diese Zeile, läuft eine alte Datei aus dem CDN-Cache." >&2
 header_info "$APP"
 variables
 color
@@ -98,6 +104,22 @@ function update_script() {
 start
 build_container
 description
+
+# Fail-loud: Install-Script muss wirklich gelaufen sein. Faellt der
+# build.func-Fetch auf 404 zurueck (leerer String -> bash -c "" -> Exit 0),
+# wuerde build.func sonst faelschlich "Completed successfully" melden.
+# Volle Kette bei Fehlern: Fetch-URL -> lxc-attach-Exit -> /opt-Inhalt.
+__verify_rc=0
+pct exec "$CTID" -- test -d /opt/open-seo 2>/dev/null || __verify_rc=$?
+if ((__verify_rc != 0)); then
+  echo "FEHLER: /opt/open-seo fehlt in CT ${CTID} - das Install-Script ist nie gelaufen." >&2
+  echo "Kette: build.func-Fetch (404?) -> lxc-attach bash -c (Exit 0 trotz Leerlauf) -> /opt-Pruefung (RC ${__verify_rc})." >&2
+  echo "Diagnose: pct exec ${CTID} -- ls -la /opt ; pct exec ${CTID} -- docker ps" >&2
+  echo "Reparatur ohne Neu-Erstellung: pct exec ${CTID} -- bash -c \"\$(curl -fsSL ${OPEN_SEO_INSTALL_URL})\"" >&2
+  echo "Tipp: Script mit 'bash -x' erneut laufen lassen fuer das volle Trace-Log." >&2
+  exit 1
+fi
+unset __verify_rc
 
 msg_ok "Completed successfully!\n"
 echo -e "${CREATING}${BGN}${CL}"
